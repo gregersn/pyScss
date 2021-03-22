@@ -58,8 +58,8 @@ class Value(object):
     def __contains__(self, item):
         return self == item
 
-    ### NOTE: From here on down, the operators are exposed to Sass code and
-    ### thus should ONLY return Sass types
+    # NOTE: From here on down, the operators are exposed to Sass code and
+    # thus should ONLY return Sass types
 
     # Reasonable default for equality
     def __eq__(self, other):
@@ -290,8 +290,10 @@ class Number(Value):
                 count, denominator_base_units.get(unit, 0))
 
         # Actually remove the units
-        numer_factor, unit_numer = cancel_base_units(unit_numer, cancelable_base_units)
-        denom_factor, unit_denom = cancel_base_units(unit_denom, cancelable_base_units)
+        numer_factor, unit_numer = cancel_base_units(
+            unit_numer, cancelable_base_units)
+        denom_factor, unit_denom = cancel_base_units(
+            unit_denom, cancelable_base_units)
 
         # And we're done
         self.unit_numer = tuple(unit_numer)
@@ -369,7 +371,8 @@ class Number(Value):
                     # Used for equality only, where == should never fail
                     return Boolean(False)
                 else:
-                    raise ValueError("Can't reconcile units: %r and %r" % (self, other))
+                    raise ValueError(
+                        "Can't reconcile units: %r and %r" % (self, other))
 
         return Boolean(op(round(left.value, PRECISION), round(right.value, PRECISION)))
 
@@ -386,7 +389,8 @@ class Number(Value):
         # square root of 'px'?  (Well, it's sqrt(px), but supporting that is
         # a bit out of scope.)
         if exp.value != int(exp.value):
-            raise ValueError("Can't raise units of %r to non-integral power %r" % (self, exp))
+            raise ValueError(
+                "Can't raise units of %r to non-integral power %r" % (self, exp))
 
         return Number(
             self.value ** int(exp.value),
@@ -428,7 +432,8 @@ class Number(Value):
             right = other.to_base_units()
 
             if left.unit_numer != right.unit_numer or left.unit_denom != right.unit_denom:
-                raise ValueError("Can't reconcile units: %r and %r" % (self, other))
+                raise ValueError(
+                    "Can't reconcile units: %r and %r" % (self, other))
 
         return Number(amount, unit_numer=self.unit_numer, unit_denom=self.unit_denom)
 
@@ -475,7 +480,8 @@ class Number(Value):
         right = other.to_base_units()
 
         if left.unit_numer != right.unit_numer or left.unit_denom != right.unit_denom:
-            raise ValueError("Can't reconcile units: %r and %r" % (self, other))
+            raise ValueError("Can't reconcile units: %r and %r" %
+                             (self, other))
 
         new_amount = op(left.value, right.value)
 
@@ -485,7 +491,7 @@ class Number(Value):
 
         return Number(new_amount, unit_numer=self.unit_numer, unit_denom=self.unit_denom)
 
-    ### Helper methods, mostly used internally
+    # Helper methods, mostly used internally
 
     def to_base_units(self):
         """Convert to a fixed set of "base" units.  The particular units are
@@ -496,8 +502,10 @@ class Number(Value):
         # Convert to "standard" units, as defined by the conversions dict above
         amount = self.value
 
-        numer_factor, numer_units = convert_units_to_base_units(self.unit_numer)
-        denom_factor, denom_units = convert_units_to_base_units(self.unit_denom)
+        numer_factor, numer_units = convert_units_to_base_units(
+            self.unit_numer)
+        denom_factor, denom_units = convert_units_to_base_units(
+            self.unit_denom)
 
         return Number(
             amount * numer_factor / denom_factor,
@@ -505,7 +513,7 @@ class Number(Value):
             unit_denom=denom_units,
         )
 
-    ### Utilities for public consumption
+    # Utilities for public consumption
 
     @classmethod
     def wrap_python_function(cls, fn):
@@ -542,7 +550,8 @@ class Number(Value):
             raise ValueError("Index cannot be zero")
 
         if check_bounds and not circular and abs(ret) > length:
-            raise ValueError("Index {0!r} out of bounds for length {1}".format(ret, length))
+            raise ValueError(
+                "Index {0!r} out of bounds for length {1}".format(ret, length))
 
         if ret > 0:
             ret -= 1
@@ -578,7 +587,8 @@ class Number(Value):
 
     def render(self, compress=False):
         if not self.has_simple_unit:
-            raise ValueError("Can't express compound units in CSS: %r" % (self,))
+            raise ValueError(
+                "Can't express compound units in CSS: %r" % (self,))
 
         if self.unit_numer:
             unit = self.unit_numer[0]
@@ -751,7 +761,8 @@ class List(Value):
     # DEVIATION: binary ops on lists and scalars act element-wise
     def __add__(self, other):
         if isinstance(other, List):
-            max_list, min_list = (self, other) if len(self) > len(other) else (other, self)
+            max_list, min_list = (self, other) if len(
+                self) > len(other) else (other, self)
             return List([item + max_list[i] for i, item in enumerate(min_list)], use_comma=self.use_comma)
 
         elif isinstance(other, String):
@@ -764,22 +775,26 @@ class List(Value):
 
     def __sub__(self, other):
         if isinstance(other, List):
-            max_list, min_list = (self, other) if len(self) > len(other) else (other, self)
+            max_list, min_list = (self, other) if len(
+                self) > len(other) else (other, self)
             return List([item - max_list[i] for i, item in enumerate(min_list)], use_comma=self.use_comma)
 
         return List([item - other for item in self], use_comma=self.use_comma)
 
     def __mul__(self, other):
         if isinstance(other, List):
-            max_list, min_list = (self, other) if len(self) > len(other) else (other, self)
-            max_list, min_list = (self, other) if len(self) > len(other) else (other, self)
+            max_list, min_list = (self, other) if len(
+                self) > len(other) else (other, self)
+            max_list, min_list = (self, other) if len(
+                self) > len(other) else (other, self)
             return List([item * max_list[i] for i, item in enumerate(min_list)], use_comma=self.use_comma)
 
         return List([item * other for item in self], use_comma=self.use_comma)
 
     def __div__(self, other):
         if isinstance(other, List):
-            max_list, min_list = (self, other) if len(self) > len(other) else (other, self)
+            max_list, min_list = (self, other) if len(
+                self) > len(other) else (other, self)
             return List([item / max_list[i] for i, item in enumerate(min_list)], use_comma=self.use_comma)
 
         return List([item / other for item in self], use_comma=self.use_comma)
@@ -832,7 +847,7 @@ class Color(Value):
         else:
             raise TypeError("Can't make Color from %r" % (tokens,))
 
-    ### Alternate constructors
+    # Alternate constructors
 
     @classmethod
     def from_rgb(cls, red, green, blue, alpha=1.0, original_literal=None):
@@ -903,7 +918,7 @@ class Color(Value):
         self.value = r, g, b, a
         return self
 
-    ### Accessors
+    # Accessors
 
     @property
     def rgb(self):
@@ -988,7 +1003,7 @@ class Color(Value):
         elif isinstance(other, Color):
             if self.alpha != other.alpha:
                 raise ValueError("Alpha channels must match between %r and %r"
-                    % (self, other))
+                                 % (self, other))
 
             other_rgb = other.rgb
         else:
@@ -997,7 +1012,7 @@ class Color(Value):
         new_rgb = [
             min(255., max(0., op(left, right)))
             # for from_rgb
-                / 255.
+            / 255.
             for (left, right) in zip(self.rgb, other_rgb)
         ]
 
@@ -1041,7 +1056,8 @@ class Color(Value):
                 sp = ''
             else:
                 sp = ' '
-            candidates.append("rgba(%d,%s%d,%s%d,%s%.6g)" % (r, sp, g, sp, b, sp, a))
+            candidates.append("rgba(%d,%s%d,%s%d,%s%.6g)" %
+                              (r, sp, g, sp, b, sp, a))
 
         if compress:
             return min(candidates, key=len)
@@ -1229,6 +1245,7 @@ class Function(String):
     marker.  Acts mostly like a string, but has a function name and parentheses
     around it.
     """
+
     def __init__(self, string, function_name, quotes='"', literal=False):
         super(Function, self).__init__(string, quotes=quotes, literal=literal)
         self.function_name = function_name
@@ -1340,4 +1357,5 @@ def expect_type(value, types, unit=any):
 
         elif unit == '%' and not (
                 value.is_unitless or value.is_simple_unit('%')):
-            raise ValueError("Expected unitless number or percentage, got %r" % (value,))
+            raise ValueError(
+                "Expected unitless number or percentage, got %r" % (value,))

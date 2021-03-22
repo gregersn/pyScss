@@ -83,6 +83,7 @@ class Compiler(object):
     """A Sass compiler.  Stores settings and knows how to fire off a
     compilation.  Main entry point into compiling Sass.
     """
+
     def __init__(
             self, root=Path(), search_path=(),
             namespace=None, extensions=(CoreExtension,),
@@ -93,7 +94,7 @@ class Compiler(object):
             loops_have_own_scopes=True,
             undefined_variables_fatal=True,
             super_selector='',
-            ):
+    ):
         """Configure a compiler.
 
         :param root: Directory to treat as the "project root".  Search paths
@@ -248,6 +249,7 @@ def compile_string(string, compiler_class=Compiler, **kwargs):
 
 class Compilation(object):
     """A single run of a compiler."""
+
     def __init__(self, compiler):
         self.compiler = compiler
         self.ignore_parse_errors = compiler.ignore_parse_errors
@@ -314,7 +316,8 @@ class Compilation(object):
         # Fix tabs and spaces in selectors
         raw_selectors = _spaces_re.sub(' ', raw_selectors)
 
-        parts = _xcss_extends_re.split(raw_selectors, 1)  # handle old xCSS extends
+        parts = _xcss_extends_re.split(
+            raw_selectors, 1)  # handle old xCSS extends
         if len(parts) > 1:
             unparsed_selectors, unsplit_parents = parts
             # Multiple `extends` are delimited by `&`
@@ -334,7 +337,7 @@ class Compilation(object):
             return
 
         for name, file_and_line in rule.namespace.unused_imports():
-            log.warn("Unused @import: '%s' (%s)", name, file_and_line)
+            log.warning("Unused @import: '%s' (%s)", name, file_and_line)
 
     def _make_calculator(self, namespace):
         return Calculator(
@@ -402,7 +405,7 @@ class Compilation(object):
         Implements @warn
         """
         value = calculator.calculate(block.argument)
-        log.warn(repr(value))
+        log.warning(repr(value))
 
     def _at_print(self, calculator, rule, scope, block):
         """
@@ -535,7 +538,8 @@ class Compilation(object):
             elif key in ('warn_unused', 'control_scoping'):
                 # TODO deprecate control_scoping?  or add it to compiler?
                 if not isinstance(value, bool):
-                    raise SassError("The '{0}' @option requires a bool, not {1!r}".format(key, value))
+                    raise SassError(
+                        "The '{0}' @option requires a bool, not {1!r}".format(key, value))
             else:
                 raise SassError("Unknown @option: {0}".format(key))
 
@@ -550,13 +554,15 @@ class Compilation(object):
         # Parse arguments with the argspec rule
         if lpar:
             if not argstr.endswith(')'):
-                raise SyntaxError("Expected ')', found end of line for %s (%s)" % (funct, rule.file_and_line))
+                raise SyntaxError("Expected ')', found end of line for %s (%s)" % (
+                    funct, rule.file_and_line))
             argstr = argstr[:-1].strip()
         else:
             # Whoops, no parens at all.  That's like calling with no arguments.
             argstr = ''
 
-        argspec_node = calculator.parse_expression(argstr, target='goal_argspec')
+        argspec_node = calculator.parse_expression(
+            argstr, target='goal_argspec')
         return funct, argspec_node
 
     def _populate_namespace_from_call(self, name, callee_namespace, mixin, args, kwargs):
@@ -612,7 +618,8 @@ class Compilation(object):
 
         # TODO would be nice to say where the mixin/function came from
         if kwargs:
-            raise NameError("%s has no such argument %s" % (name, kwargs.keys()[0]))
+            raise NameError("%s has no such argument %s" %
+                            (name, kwargs.keys()[0]))
 
         if args:
             raise NameError("%s received extra arguments: %r" % (name, args))
@@ -626,9 +633,11 @@ class Compilation(object):
         Implements @mixin and @function
         """
         if not block.argument:
-            raise SyntaxError("%s requires a function name (%s)" % (block.directive, rule.file_and_line))
+            raise SyntaxError("%s requires a function name (%s)" %
+                              (block.directive, rule.file_and_line))
 
-        funct, argspec_node = self._get_funct_def(rule, calculator, block.argument)
+        funct, argspec_node = self._get_funct_def(
+            rule, calculator, block.argument)
 
         defaults = {}
         new_params = []
@@ -640,7 +649,8 @@ class Compilation(object):
 
         # TODO a function or mixin is re-parsed every time it's called; there's
         # no AST for anything but expressions  :(
-        mixin = [rule.source_file, block.lineno, block.unparsed_contents, rule.namespace, argspec_node, rule.source_file]
+        mixin = [rule.source_file, block.lineno, block.unparsed_contents,
+                 rule.namespace, argspec_node, rule.source_file]
         if block.directive == '@function':
             def _call(mixin):
                 def __call(namespace, *args, **kwargs):
@@ -715,7 +725,8 @@ class Compilation(object):
         """
         caller_namespace = rule.namespace
         caller_calculator = self._make_calculator(caller_namespace)
-        funct, caller_argspec = self._get_funct_def(rule, caller_calculator, block.argument)
+        funct, caller_argspec = self._get_funct_def(
+            rule, caller_calculator, block.argument)
 
         # Render the passed arguments, using the caller's namespace
         args, kwargs = caller_argspec.evaluate_call_args(caller_calculator)
@@ -729,7 +740,8 @@ class Compilation(object):
                 # Fallback to single parameter:
                 mixin = caller_namespace.mixin(funct, 1)
             except KeyError:
-                log.error("Mixin not found: %s:%d (%s)", funct, argc, rule.file_and_line, extra={'stack': True})
+                log.error("Mixin not found: %s:%d (%s)", funct, argc,
+                          rule.file_and_line, extra={'stack': True})
                 return
             else:
                 args = [List(args, use_comma=True)]
@@ -783,7 +795,8 @@ class Compilation(object):
         Implements @content
         """
         if '@content' not in rule.options:
-            log.error("Content string not found for @content (%s)", rule.file_and_line)
+            log.error("Content string not found for @content (%s)",
+                      rule.file_and_line)
         rule.unparsed_contents = rule.options.pop('@content', '')
         self.manage_children(rule, scope)
 
@@ -878,7 +891,8 @@ class Compilation(object):
         # succeeded, in which case `@else if` should be skipped
         if block.directive != '@if':
             if '@if' not in rule.options:
-                raise SyntaxError("@else with no @if (%s)" % (rule.file_and_line,))
+                raise SyntaxError("@else with no @if (%s)" %
+                                  (rule.file_and_line,))
             if rule.options['@if']:
                 # Last @if succeeded; stop here
                 return
@@ -905,7 +919,8 @@ class Compilation(object):
         if not val:
             inner_rule = rule.copy()
             inner_rule.unparsed_contents = block.unparsed_contents
-            inner_rule.namespace = rule.namespace  # DEVIATION: Commenting this line gives the Sass bahavior
+            # DEVIATION: Commenting this line gives the Sass bahavior
+            inner_rule.namespace = rule.namespace
             inner_rule.unparsed_contents = block.unparsed_contents
             self.manage_children(inner_rule, scope)
 
@@ -934,7 +949,7 @@ class Compilation(object):
             frm, through = through, frm
             rev = reversed
         else:
-            rev = lambda x: x
+            def rev(x): return x
         var = var.strip()
         var = calculator.do_glob_math(var)
         var = normalize_var(var)
@@ -1037,7 +1052,8 @@ class Compilation(object):
         except IndexError:
             is_var = False
         if is_var:
-            warn_deprecated(rule, "Assignment with = is deprecated; use : instead.")
+            warn_deprecated(
+                rule, "Assignment with = is deprecated; use : instead.")
         calculator = self._make_calculator(rule.namespace)
         prop = prop.strip()
         prop = calculator.do_glob_math(prop)
@@ -1074,7 +1090,7 @@ class Compilation(object):
                 pass
             else:
                 if is_defined and prop.startswith('$') and prop[1].isupper():
-                    log.warn("Constant %r redefined", prop)
+                    log.warning("Constant %r redefined", prop)
 
                 # Variable assignment is an expression, so it always performs
                 # real division
@@ -1149,8 +1165,8 @@ class Compilation(object):
 
             legacy_compiler_options=rule.legacy_compiler_options,
             options=rule.options.copy(),
-            #properties
-            #extends_selectors
+            # properties
+            # extends_selectors
             ancestry=RuleAncestry(new_ancestry),
 
             namespace=rule.namespace.derive(),
@@ -1191,7 +1207,7 @@ class Compilation(object):
 
             legacy_compiler_options=rule.legacy_compiler_options,
             options=rule.options.copy(),
-            #properties
+            # properties
             extends_selectors=c_parents,
             ancestry=new_ancestry,
 
@@ -1316,7 +1332,8 @@ class Compilation(object):
     def _textwrap(self, txt, width=70):
         if not hasattr(self, '_textwrap_wordsep_re'):
             self._textwrap_wordsep_re = re.compile(r'(?<=,)\s+')
-            self._textwrap_strings_re = re.compile(r'''(["'])(?:(?!\1)[^\\]|\\.)*\1''')
+            self._textwrap_strings_re = re.compile(
+                r'''(["'])(?:(?!\1)[^\\]|\\.)*\1''')
 
         # First, remove commas from anything within strings (marking commas as \0):
         def _repl(m):
@@ -1424,22 +1441,30 @@ class Compilation(object):
                 if debug_info:
                     def _print_debug_info(filename, lineno):
                         if debug_info == 'comments':
-                            result = tb * (i + nesting) + "/* file: %s, line: %s */" % (filename, lineno) + nl
+                            result = tb * \
+                                (i + nesting) + \
+                                "/* file: %s, line: %s */" % (
+                                    filename, lineno) + nl
                         else:
                             filename = _escape_chars_re.sub(r'\\\1', filename)
-                            result = tb * (i + nesting) + "@media -sass-debug-info{filename{font-family:file\:\/\/%s}line{font-family:\\00003%s}}" % (filename, lineno) + nl
+                            result = tb * (i + nesting) + "@media -sass-debug-info{filename{font-family:file\\:\\/\\/%s}line{font-family:\\00003%s}}" % (
+                                filename, lineno) + nl
                         return result
 
                     if rule.lineno and rule.source_file:
-                        result += _print_debug_info(rule.source_file.path, rule.lineno)
+                        result += _print_debug_info(
+                            rule.source_file.path, rule.lineno)
 
                     if rule.from_lineno and rule.from_source_file:
-                        result += _print_debug_info(rule.from_source_file.path, rule.from_lineno)
+                        result += _print_debug_info(
+                            rule.from_source_file.path, rule.from_lineno)
 
                 if header.is_selector:
-                    header_string = header.render(sep=',' + sp, super_selector=super_selector)
+                    header_string = header.render(
+                        sep=',' + sp, super_selector=super_selector)
                     if nl:
-                        header_string = (nl + tb * (i + nesting)).join(self._textwrap(header_string))
+                        header_string = (nl + tb * (i + nesting)
+                                         ).join(self._textwrap(header_string))
                 else:
                     header_string = header.render()
                 result += tb * (i + nesting) + header_string + sp + '{' + nl
@@ -1451,7 +1476,8 @@ class Compilation(object):
             dangling_property = False
 
             if not skip_selectors:
-                result += self._print_properties(rule.properties, sc, sp, tb * (ancestry_len + nesting), nl, lnl)
+                result += self._print_properties(rule.properties,
+                                                 sc, sp, tb * (ancestry_len + nesting), nl, lnl)
                 dangling_property = True
 
         # Close all remaining blocks
@@ -1494,6 +1520,7 @@ class SassReturn(SassBaseError):
     """Special control-flow exception used to hop up the stack from a Sass
     function's ``@return``.
     """
+
     def __init__(self, retval):
         super(SassReturn, self).__init__()
         self.retval = retval

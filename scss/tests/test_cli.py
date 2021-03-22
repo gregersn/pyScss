@@ -6,7 +6,7 @@ from subprocess import PIPE, Popen
 
 def test_stdio():
     proc = Popen(
-        ['python', '-m', 'scss.tool', '-C'],
+        ['python3', '-m', 'scss.tool', '-C'],
         stdin=PIPE,
         stdout=PIPE,
         # this automatically handles encoding/decoding on py3
