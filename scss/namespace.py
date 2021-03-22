@@ -26,6 +26,7 @@ class Scope(object):
     Similar to `ChainMap`, except that assigning a new value will replace an
     existing value, not mask it.
     """
+
     def __init__(self, maps=()):
         maps = list(maps)
         self.maps = [dict()] + maps
@@ -127,8 +128,10 @@ class Namespace(object):
         else:
             # Note that this will create a 2-dimensional scope where each of
             # these scopes is checked first in order.  TODO is this right?
-            self._variables = VariableScope(other._variables for other in others)
-            self._functions = FunctionScope(other._functions for other in others)
+            self._variables = VariableScope(
+                other._variables for other in others)
+            self._functions = FunctionScope(
+                other._functions for other in others)
             self._mixins = MixinScope(other._mixins for other in others)
             self._imports = ImportScope(other._imports for other in others)
         return self
@@ -169,9 +172,9 @@ class Namespace(object):
 
     def _auto_register_function(self, function, name, ignore_args=0):
         name = name.replace('_', '-').rstrip('-')
-        argspec = inspect.getargspec(function)
+        argspec = inspect.getfullargspec(function)
 
-        if argspec.varargs or argspec.keywords:
+        if argspec.varargs or argspec.varkw:
             # Accepts some arbitrary number of arguments
             arities = [None]
         else:
@@ -198,7 +201,8 @@ class Namespace(object):
         self._assert_mutable()
         name = normalize_var(name)
         if not isinstance(value, Value):
-            raise TypeError("Expected a Sass type, while setting %s got %r" % (name, value,))
+            raise TypeError(
+                "Expected a Sass type, while setting %s got %r" % (name, value,))
         self._variables.set(name, value, force_local=local_only)
 
     def has_import(self, source):
